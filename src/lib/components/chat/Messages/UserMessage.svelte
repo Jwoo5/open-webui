@@ -18,6 +18,9 @@
 	import FileItem from '$lib/components/common/FileItem.svelte';
 	import Markdown from './Markdown.svelte';
 	import Image from '$lib/components/common/Image.svelte';
+	import EcgRecordPreview from './EcgRecordPreview.svelte';
+	import EcgAttachmentChip from '$lib/components/chat/MessageInput/EcgAttachmentChip.svelte';
+	import { groupAttachments, withoutEcgRecord } from '$lib/utils/ecgAttachments';
 	import DeleteConfirmDialog from '$lib/components/common/ConfirmDialog.svelte';
 	import SubagentResultRow from './SubagentResultRow.svelte';
 
@@ -177,13 +180,36 @@
 						class="mb-1 w-full flex flex-col justify-end overflow-x-auto gap-1 flex-wrap"
 						dir={$settings?.chatDirection ?? 'auto'}
 					>
-						{#each message.files as file}
+						{#each groupAttachments(message.files) as entry}
+							{@const file = entry.kind === 'file' ? entry.item : (entry.preview ?? entry.items[0])}
 							{@const fileUrl =
 								file.url?.startsWith('data') || file.url?.startsWith('http')
 									? file.url
 									: `${WEBUI_API_BASE_URL}/files/${file.url}${file?.content_type ? '/content' : ''}`}
-							<div class={($settings?.chatBubble ?? true) ? 'self-end' : ''}>
-								{#if file.type === 'image' || (file?.content_type ?? '').startsWith('image/')}
+							{@const ecgPreview =
+								!compactPreview && entry.kind === 'ecg' && entry.preview !== null}
+							<div
+								class={($settings?.chatBubble ?? true) ? 'self-end' : ''}
+								class:w-full={ecgPreview}
+							>
+								{#if entry.kind === 'ecg'}
+									{#if ecgPreview}
+										<EcgRecordPreview
+											src={fileUrl}
+											label={entry.label}
+											pacemakerDetection={entry.pacemakerDetection}
+											complete={entry.complete}
+										/>
+									{:else}
+										<EcgAttachmentChip
+											preview={entry.preview}
+											label={entry.label}
+											pacemakerDetection={entry.pacemakerDetection}
+											incomplete={!entry.complete}
+											removable={false}
+										/>
+									{/if}
+								{:else if file.type === 'image' || (file?.content_type ?? '').startsWith('image/')}
 									<Image src={fileUrl} imageClassName=" max-h-96 rounded-lg" />
 								{:else}
 									<FileItem
@@ -210,8 +236,22 @@
 				>
 					{#if (editedFiles ?? []).length > 0}
 						<div class="flex items-center flex-wrap gap-2 -mx-2 mb-1">
-							{#each editedFiles as file, fileIdx}
-								{#if file.type === 'image' || (file?.content_type ?? '').startsWith('image/')}
+							{#each groupAttachments(editedFiles) as entry}
+								{@const file = entry.kind === 'file' ? entry.item : null}
+								{@const fileIdx = entry.kind === 'file' ? entry.index : -1}
+								{#if entry.kind === 'ecg'}
+									<EcgAttachmentChip
+										preview={entry.preview}
+										label={entry.label}
+										pacemakerDetection={entry.pacemakerDetection}
+										loading={entry.uploading}
+										incomplete={!entry.complete}
+										size="edit"
+										on:remove={() => {
+											editedFiles = withoutEcgRecord(editedFiles, entry.record);
+										}}
+									/>
+								{:else if file.type === 'image' || (file?.content_type ?? '').startsWith('image/')}
 									{@const fileUrl =
 										file.url?.startsWith('data') || file.url?.startsWith('http')
 											? file.url

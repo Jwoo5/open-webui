@@ -66,6 +66,7 @@
 	} from '$lib/utils';
 	import { AudioQueue } from '$lib/utils/audio';
 	import { createTemporaryChatId, isTemporaryChatId } from '$lib/utils/chatId';
+	import { nextQueuedBatch } from '$lib/utils/ecgAttachments';
 	import { applyResponseStreamEvent, getOutputText } from './Messages/structuredOutput';
 
 	import {
@@ -2470,7 +2471,7 @@
 		}
 
 		processingQueueChats.add(targetChatId);
-		const queuedMessages = [...queue];
+		const queuedMessages = nextQueuedBatch(queue);
 		const queuedMessageIds = new Set(queuedMessages.map((m) => m.id));
 		try {
 			const combinedPrompt = queuedMessages.map((m) => m.prompt).join('\n\n');
@@ -4428,6 +4429,7 @@
 										{taskIds}
 										bind:selectedModels
 										bind:files
+										chatFileCount={chatFiles.length}
 										bind:prompt
 										bind:autoScroll
 										bind:selectedToolIds
@@ -4520,6 +4522,7 @@
 										{taskIds}
 										bind:selectedModels
 										bind:files
+										chatFileCount={chatFiles.length}
 										bind:prompt
 										bind:autoScroll
 										bind:selectedToolIds
@@ -4580,6 +4583,7 @@
 									bind:selectedModels
 									bind:messageInput
 									bind:files
+									chatFileCount={chatFiles.length}
 									bind:prompt
 									bind:autoScroll
 									bind:selectedToolIds

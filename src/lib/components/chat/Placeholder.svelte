@@ -42,6 +42,8 @@
 
 	export let prompt = '';
 	export let files = [];
+	// How many files the chat holds from its earlier messages, for the input.
+	export let chatFileCount = 0;
 	export let messageInput = null;
 
 	export let selectedToolIds = [];
@@ -235,6 +237,7 @@
 						{history}
 						bind:selectedModels
 						bind:files
+						{chatFileCount}
 						bind:prompt
 						bind:autoScroll
 						bind:selectedToolIds

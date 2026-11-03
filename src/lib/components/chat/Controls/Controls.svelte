@@ -8,6 +8,7 @@
 	import Valves from '$lib/components/chat/Controls/Valves.svelte';
 	import FileItem from '$lib/components/common/FileItem.svelte';
 	import Collapsible from '$lib/components/common/Collapsible.svelte';
+	import { groupAttachments, withoutEcgRecord } from '$lib/utils/ecgAttachments';
 
 	import { user, settings } from '$lib/stores';
 	export let models = [];
@@ -65,27 +66,44 @@
 					chevronStrokeWidth="2"
 				>
 					<div class="flex flex-col gap-1 mt-1.5" slot="content">
-						{#each chatFiles as file, fileIdx}
-							<FileItem
-								className="w-full"
-								item={file}
-								edit={true}
-								url={file?.url ? file.url : null}
-								name={file.name}
-								type={file.type}
-								size={file?.size}
-								dismissible={true}
-								small={true}
-								on:dismiss={() => {
-									// Remove the file from the chatFiles array
+						{#each groupAttachments(chatFiles) as entry}
+							{@const file = entry.kind === 'file' ? entry.item : null}
+							{@const fileIdx = entry.kind === 'file' ? entry.index : -1}
+							{#if entry.kind === 'ecg'}
+								<!-- The files the chat holds for the record, sized and removed together: its .hea and, for a recording, its .dat. The preview, an image, is not among the chat's files. -->
+								<FileItem
+									className="w-full"
+									name={entry.label}
+									type="file"
+									size={entry.items.reduce((total, item) => total + (item?.size ?? 0), 0)}
+									dismissible={true}
+									small={true}
+									on:dismiss={() => {
+										chatFiles = withoutEcgRecord(chatFiles, entry.record);
+									}}
+								/>
+							{:else}
+								<FileItem
+									className="w-full"
+									item={file}
+									edit={true}
+									url={file?.url ? file.url : null}
+									name={file.name}
+									type={file.type}
+									size={file?.size}
+									dismissible={true}
+									small={true}
+									on:dismiss={() => {
+										// Remove the file from the chatFiles array
 
-									chatFiles.splice(fileIdx, 1);
-									chatFiles = chatFiles;
-								}}
-								on:click={() => {
-									console.log(file);
-								}}
-							/>
+										chatFiles.splice(fileIdx, 1);
+										chatFiles = chatFiles;
+									}}
+									on:click={() => {
+										console.log(file);
+									}}
+								/>
+							{/if}
 						{/each}
 					</div>
 				</Collapsible>

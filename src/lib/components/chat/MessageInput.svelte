@@ -73,6 +73,9 @@
 	import { getSuggestionRenderer } from '../common/RichTextInput/suggestions';
 
 	import InputMenu from './MessageInput/InputMenu.svelte';
+	import EcgAttach from './MessageInput/EcgAttach.svelte';
+	import EcgAttachmentChip from './MessageInput/EcgAttachmentChip.svelte';
+	import { groupAttachments, withoutEcgRecord } from '$lib/utils/ecgAttachments';
 	import VoiceRecording from './MessageInput/VoiceRecording.svelte';
 	import ModelSelector from './ModelSelector.svelte';
 
@@ -180,6 +183,9 @@
 
 	export let prompt = '';
 	export let files: any[] = [];
+	// How many files the chat holds from its earlier messages, which the ECG
+	// attachment counts against the file limit.
+	export let chatFileCount = 0;
 
 	export let selectedToolIds: string[] = [];
 	export let selectedSkillIds: string[] = [];
@@ -1063,6 +1069,17 @@
 		}
 	};
 
+	let ecgAttach: EcgAttach | undefined;
+
+	// Sends the message, unless the ECG attach button says an ECG record in
+	// it is still being attached or lacks a file.
+	const submitMessage = () => {
+		if (ecgAttach && !ecgAttach.canSend()) {
+			return;
+		}
+		dispatch('submit', prompt);
+	};
+
 	const inputFilesHandler = async (inputFiles) => {
 		console.log('Input files handler called with:', inputFiles);
 
@@ -1716,7 +1733,7 @@
 								focus({ preventScroll: true });
 
 								if ($settings?.speechAutoSend ?? false) {
-									dispatch('submit', prompt);
+									submitMessage();
 								}
 							}}
 						/>
@@ -1724,7 +1741,7 @@
 					<form
 						class="w-full flex flex-col gap-1.5 {recording ? 'hidden' : ''}"
 						on:submit|preventDefault={() => {
-							dispatch('submit', prompt);
+							submitMessage();
 						}}
 					>
 						<button
@@ -1896,8 +1913,21 @@
 									class="mx-2 mt-2 pb-1 flex items-center flex-wrap gap-1.5"
 									dir={$settings?.chatDirection ?? 'auto'}
 								>
-									{#each files as file, fileIdx}
-										{#if file.type === 'image' || (file?.content_type ?? '').startsWith('image/')}
+									{#each groupAttachments(files) as entry}
+										{@const file = entry.kind === 'file' ? entry.item : null}
+										{@const fileIdx = entry.kind === 'file' ? entry.index : -1}
+										{#if entry.kind === 'ecg'}
+											<EcgAttachmentChip
+												preview={entry.preview}
+												label={entry.label}
+												pacemakerDetection={entry.pacemakerDetection}
+												loading={entry.uploading}
+												incomplete={!entry.complete}
+												on:remove={() => {
+													files = withoutEcgRecord(files, entry.record);
+												}}
+											/>
+										{:else if file.type === 'image' || (file?.content_type ?? '').startsWith('image/')}
 											{@const fileUrl =
 												file.url.startsWith('data') || file.url.startsWith('http')
 													? file.url
@@ -2118,7 +2148,7 @@
 																if (enterPressed) {
 																	e.preventDefault();
 																	if (prompt !== '' || files.length > 0) {
-																		dispatch('submit', prompt);
+																		submitMessage();
 																	}
 																}
 															}
@@ -2180,6 +2210,7 @@
 
 							<div class=" flex justify-between mt-0.5 mb-2 mx-0.5 max-w-full" dir="ltr">
 								<div class="ml-1 self-end flex items-center flex-1 min-w-0">
+									<EcgAttach bind:this={ecgAttach} bind:files {chatFileCount} {uploadFileHandler} />
 									<InputMenu
 										bind:files
 										selectedModels={selectedModelIds}

@@ -6,7 +6,9 @@
 	import GarbageBin from '$lib/components/icons/GarbageBin.svelte';
 	import EditPencil from '$lib/components/icons/EditPencil.svelte';
 	import ArrowForward from '$lib/components/icons/ArrowForward.svelte';
+	import Heart from '$lib/components/icons/Heart.svelte';
 	import { WEBUI_API_BASE_URL } from '$lib/constants';
+	import { groupAttachments } from '$lib/utils/ecgAttachments';
 
 	const i18n = getContext('i18n');
 
@@ -28,8 +30,22 @@
 	<div class="flex-1 min-w-0 flex items-center gap-2">
 		{#if files.length > 0}
 			<div class="flex items-center gap-1 shrink-0">
-				{#each files as file}
-					{#if file.type === 'image' || (file?.content_type ?? '').startsWith('image/')}
+				{#each groupAttachments(files) as entry}
+					{@const file = entry.kind === 'file' ? entry.item : null}
+					{#if entry.kind === 'ecg'}
+						<div
+							class="flex h-6 max-w-[9rem] items-center gap-1 rounded-lg border border-gray-100/60 bg-white/60 px-1.5 text-[0.6875rem] leading-none text-gray-500 dark:border-white/[0.06] dark:bg-white/[0.025] dark:text-gray-400"
+						>
+							<span class="shrink-0 text-gray-400 dark:text-gray-500">
+								{#if entry.uploading}
+									<Spinner className="size-3" />
+								{:else}
+									<Heart className="size-3" />
+								{/if}
+							</span>
+							<span class="max-w-[7rem] truncate">{entry.label}</span>
+						</div>
+					{:else if file.type === 'image' || (file?.content_type ?? '').startsWith('image/')}
 						{@const fileUrl =
 							file.url?.startsWith('data') || file.url?.startsWith('http')
 								? file.url

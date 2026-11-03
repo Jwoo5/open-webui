@@ -42,6 +42,8 @@
 	import Name from './Name.svelte';
 	import ProfileImage from './ProfileImage.svelte';
 	import Image from '$lib/components/common/Image.svelte';
+	import EcgImageViewer from './EcgImageViewer.svelte';
+	import { isEcgAgentModel } from '$lib/utils/ecgViewer';
 	import Tooltip from '$lib/components/common/Tooltip.svelte';
 	import RateComment from './RateComment.svelte';
 	import WebSearchResults from './ResponseMessage/WebSearchResults.svelte';
@@ -693,8 +695,15 @@
 								dir={$settings?.chatDirection ?? 'auto'}
 							>
 								{#each message.files.filter((f) => ['image', 'file'].includes(f.type)) as file}
-									<div>
-										{#if file.type === 'image' || (file?.content_type ?? '').startsWith('image/')}
+									{@const ecgImage =
+										!compactPreview &&
+										(isEcgAgentModel(message.model) ||
+											isEcgAgentModel(model?.info?.base_model_id)) &&
+										file.type === 'image'}
+									<div class:w-full={ecgImage}>
+										{#if ecgImage}
+											<EcgImageViewer src={file.url} alt={$i18n.t('ECG evidence')} />
+										{:else if file.type === 'image' || (file?.content_type ?? '').startsWith('image/')}
 											<Image src={file.url} alt={file.name || $i18n.t('Generated Image')} />
 										{:else}
 											<FileItem

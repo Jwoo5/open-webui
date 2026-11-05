@@ -791,6 +791,7 @@ WEBUI_AUTH_TRUSTED_ROLE_HEADER = os.getenv('WEBUI_AUTH_TRUSTED_ROLE_HEADER', Non
 # With trusted-header sign-in on, a request that does not carry the email header
 # signs in by password instead of being refused. A proxy can then sign users in
 # by header on one address and by password on another, setting the header on one only.
+# The first account, which is made an admin, is then created by password only.
 WEBUI_AUTH_TRUSTED_HEADER_OPTIONAL = os.getenv('WEBUI_AUTH_TRUSTED_HEADER_OPTIONAL', 'False').lower() == 'true'
 
 # Guest accounts: users other than admins whose email is at GUEST_ACCOUNT_EMAIL_DOMAIN

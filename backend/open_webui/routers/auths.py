@@ -69,9 +69,10 @@ from open_webui.utils.auth import (
     get_http_authorization_cred,
     get_password_hash,
     get_verified_user,
-    uses_trusted_header_auth,
     invalidate_token,
+    may_create_first_account,
     revoke_user_tokens,
+    uses_trusted_header_auth,
     validate_password,
     verify_password,
 )
@@ -745,6 +746,8 @@ async def signin(
                 pass
 
         if not await Users.get_user_by_email(email.lower(), db=db):
+            if not may_create_first_account(request) and not await Users.has_users(db=db):
+                raise HTTPException(status.HTTP_403_FORBIDDEN, detail=ERROR_MESSAGES.FIRST_ACCOUNT_BY_PASSWORD)
             try:
                 await signup_handler(
                     request,
@@ -904,6 +907,9 @@ async def signup(
     db: AsyncSession = Depends(get_async_session),
 ):
     has_users = await Users.has_users(db=db)
+
+    if not has_users and not may_create_first_account(request):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail=ERROR_MESSAGES.FIRST_ACCOUNT_BY_PASSWORD)
 
     if WEBUI_AUTH:
         if has_users:

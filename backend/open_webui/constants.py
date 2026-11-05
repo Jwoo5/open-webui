@@ -64,6 +64,8 @@ class ERROR_MESSAGES(str, Enum):
         'Your provider has not provided a trusted header. Please contact your administrator for assistance.'
     )
 
+    FIRST_ACCOUNT_BY_PASSWORD = 'This site is not open yet. Please try again later.'
+
     EXISTING_USERS = "You can't turn off authentication because there are existing users. If you want to disable WEBUI_AUTH, make sure your web interface doesn't have any existing users and is a fresh installation."
 
     UNAUTHORIZED = '401 Unauthorized'

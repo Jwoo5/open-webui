@@ -340,6 +340,16 @@ def uses_trusted_header_auth(request: Request) -> bool:
     return True
 
 
+def may_create_first_account(request: Request) -> bool:
+    """Whether *request* may create the first account, which is made an admin.
+
+    With WEBUI_AUTH_TRUSTED_HEADER_OPTIONAL set, the header signs users in on
+    one address and passwords on another, so the first account is created
+    where passwords are used: a request carrying the header may not create it.
+    """
+    return not (WEBUI_AUTH_TRUSTED_HEADER_OPTIONAL and uses_trusted_header_auth(request))
+
+
 def extract_token_from_auth_header(auth_header: str):
     return auth_header[len('Bearer ') :]
 

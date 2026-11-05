@@ -5,7 +5,7 @@
 	import type { i18n as i18nType } from 'i18next';
 
 	import { WEBUI_BASE_URL } from '$lib/constants';
-	import { config, models, settings, temporaryChatEnabled } from '$lib/stores';
+	import { config, models, settings } from '$lib/stores';
 	import type { Model } from '$lib/stores';
 	import {
 		CANONICAL_LEADS,
@@ -420,12 +420,6 @@
 	// items, and the chosen source is checked again before its record is
 	// uploaded.
 	const refusal = (source: EcgSource | null): string | null => {
-		// A temporary chat keeps files in the browser and extracts their text,
-		// which a binary record has none of; the record has to be uploaded.
-		if ($temporaryChatEnabled) {
-			return $i18n.t('An ECG cannot be attached in a temporary chat.');
-		}
-
 		// The server reads one record per message, the last one attached, so
 		// a second record would silently take the place of the first.
 		if (isAttaching()) {

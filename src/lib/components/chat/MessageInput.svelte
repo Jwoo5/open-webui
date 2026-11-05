@@ -75,7 +75,7 @@
 	import InputMenu from './MessageInput/InputMenu.svelte';
 	import EcgAttach from './MessageInput/EcgAttach.svelte';
 	import EcgAttachmentChip from './MessageInput/EcgAttachmentChip.svelte';
-	import { groupAttachments, withoutEcgRecord } from '$lib/utils/ecgAttachments';
+	import { ecgRecordOf, groupAttachments, withoutEcgRecord } from '$lib/utils/ecgAttachments';
 	import VoiceRecording from './MessageInput/VoiceRecording.svelte';
 	import ModelSelector from './ModelSelector.svelte';
 
@@ -984,7 +984,9 @@
 			return;
 		}
 
-		if (!$temporaryChatEnabled) {
+		// The files of an ECG record are uploaded in a temporary chat as well:
+		// the server reads them, and they hold no text to extract here.
+		if (!$temporaryChatEnabled || ecgRecordOf(fileItem) !== null) {
 			try {
 				// If the file is an audio file, provide the language for STT.
 				let metadata = null;

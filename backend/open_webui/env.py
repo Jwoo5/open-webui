@@ -793,6 +793,15 @@ WEBUI_AUTH_TRUSTED_ROLE_HEADER = os.getenv('WEBUI_AUTH_TRUSTED_ROLE_HEADER', Non
 # by header on one address and by password on another, setting the header on one only.
 WEBUI_AUTH_TRUSTED_HEADER_OPTIONAL = os.getenv('WEBUI_AUTH_TRUSTED_HEADER_OPTIONAL', 'False').lower() == 'true'
 
+# Guest accounts: users other than admins whose email is at GUEST_ACCOUNT_EMAIL_DOMAIN
+# are removed, with their chats and files, once idle for GUEST_ACCOUNT_RETENTION_HOURS.
+# Every account is kept unless both are set.
+GUEST_ACCOUNT_EMAIL_DOMAIN = os.getenv('GUEST_ACCOUNT_EMAIL_DOMAIN', '').strip().lower()
+try:
+    GUEST_ACCOUNT_RETENTION_HOURS = float(os.getenv('GUEST_ACCOUNT_RETENTION_HOURS', '') or 0)
+except ValueError:
+    GUEST_ACCOUNT_RETENTION_HOURS = 0.0
+
 # Custom header name for API key authentication.  Defaults to 'x-api-key'.
 # Useful when Open WebUI sits behind a reverse proxy / API gateway that
 # already uses the Authorization header for its own authentication — set

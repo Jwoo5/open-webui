@@ -233,6 +233,7 @@ from open_webui.utils.chat_variables import (
 from open_webui.utils.embeddings import generate_embeddings
 from open_webui.utils.json_codec import JSONCodec
 from open_webui.utils.json_response import apply_orjson_http_json
+from open_webui.utils.guest_accounts import guest_account_cleanup_enabled, periodic_guest_account_cleanup
 from open_webui.utils.logger import start_logger
 from open_webui.utils.middleware import (
     background_tasks_handler,
@@ -393,6 +394,9 @@ async def lifespan(app: FastAPI):
 
     app.state.scheduler_worker_loop = asyncio.create_task(scheduler_worker_loop(app))
 
+    if guest_account_cleanup_enabled():
+        app.state.guest_account_cleanup = asyncio.create_task(periodic_guest_account_cleanup())
+
     if await Config.get('models.base_models_cache'):
         try:
             await get_all_models(
@@ -475,6 +479,8 @@ async def lifespan(app: FastAPI):
     app.state.periodic_usage_pool_cleanup.cancel()
     app.state.periodic_session_pool_cleanup.cancel()
     app.state.scheduler_worker_loop.cancel()
+    if hasattr(app.state, 'guest_account_cleanup'):
+        app.state.guest_account_cleanup.cancel()
 
     await publish_event(app, EVENTS.SYSTEM_SHUTDOWN_COMPLETED, source='system')
 

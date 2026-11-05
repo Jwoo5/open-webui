@@ -67,6 +67,7 @@
 	import { AudioQueue } from '$lib/utils/audio';
 	import { createTemporaryChatId, isTemporaryChatId } from '$lib/utils/chatId';
 	import { nextQueuedBatch } from '$lib/utils/ecgAttachments';
+	import { temporaryChatKeeper } from '$lib/utils/temporaryChat';
 	import { applyResponseStreamEvent, getOutputText } from './Messages/structuredOutput';
 
 	import {
@@ -789,6 +790,11 @@
 		noteChatDebug('embedded draft requested', { embeddedDraftKey });
 		currentDraftKey = embeddedDraftKey;
 		initEmbeddedDraft();
+	}
+
+	// The tab keeps an open temporary chat, so a reload brings it back.
+	$: if (!embedded && !chatIdProp && $temporaryChatEnabled) {
+		temporaryChatKeeper.save({ history, chatFiles, selectedModels, params });
 	}
 
 	let saveControlsTimer;
@@ -1534,6 +1540,7 @@
 		loading = true;
 		console.log('mounted');
 		window.addEventListener('message', onMessageHandler);
+		window.addEventListener('pagehide', temporaryChatKeeper.flush);
 		$socket?.on('events', chatEventHandler);
 		$socket?.on('connect', handleSocketConnect);
 
@@ -1626,6 +1633,8 @@
 				chatTitle.set('');
 
 				window.removeEventListener('message', onMessageHandler);
+				window.removeEventListener('pagehide', temporaryChatKeeper.flush);
+				temporaryChatKeeper.flush();
 				$socket?.off('events', chatEventHandler);
 				$socket?.off('connect', handleSocketConnect);
 				dismissContextCompactionToast();
@@ -2135,6 +2144,20 @@
 		chatVariables = {};
 		taskIds = null;
 		chatTasks = [];
+
+		// The first new chat of a page load brings back the temporary chat the tab kept.
+		const keptChat = embedded ? null : temporaryChatKeeper.take($temporaryChatEnabled === true);
+		if (keptChat) {
+			history = keptChat.history;
+			chatFiles = keptChat.chatFiles;
+			params = keptChat.params;
+			const keptModels = keptChat.selectedModels.filter((modelId) =>
+				availableModels.includes(modelId)
+			);
+			if (keptModels.length > 0) {
+				selectedModels = keptModels;
+			}
+		}
 
 		if ($page.url.searchParams.get('youtube')) {
 			await uploadWeb(`https://www.youtube.com/watch?v=${$page.url.searchParams.get('youtube')}`);

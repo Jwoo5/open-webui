@@ -69,6 +69,7 @@ from open_webui.utils.auth import (
     get_http_authorization_cred,
     get_password_hash,
     get_verified_user,
+    uses_trusted_header_auth,
     invalidate_token,
     revoke_user_tokens,
     validate_password,
@@ -390,7 +391,7 @@ async def update_password(
     db: AsyncSession = Depends(get_async_session),
 ):
     # Trusted-header auth mode delegates passwords to the reverse proxy
-    if WEBUI_AUTH_TRUSTED_EMAIL_HEADER:
+    if uses_trusted_header_auth(request):
         raise HTTPException(status.HTTP_400_BAD_REQUEST, detail=ERROR_MESSAGES.ACTION_PROHIBITED)
     if session_user:
         user = await Auths.authenticate_user(
@@ -728,7 +729,7 @@ async def signin(
 
     auth_source = 'password'
 
-    if WEBUI_AUTH_TRUSTED_EMAIL_HEADER:
+    if uses_trusted_header_auth(request):
         auth_source = 'trusted_header'
         if WEBUI_AUTH_TRUSTED_EMAIL_HEADER not in request.headers:
             raise HTTPException(status.HTTP_400_BAD_REQUEST, detail=ERROR_MESSAGES.INVALID_TRUSTED_HEADER)

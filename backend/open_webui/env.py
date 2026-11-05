@@ -788,6 +788,10 @@ WEBUI_AUTH_TRUSTED_EMAIL_HEADER = os.getenv('WEBUI_AUTH_TRUSTED_EMAIL_HEADER', N
 WEBUI_AUTH_TRUSTED_NAME_HEADER = os.getenv('WEBUI_AUTH_TRUSTED_NAME_HEADER', None)
 WEBUI_AUTH_TRUSTED_GROUPS_HEADER = os.getenv('WEBUI_AUTH_TRUSTED_GROUPS_HEADER', None)
 WEBUI_AUTH_TRUSTED_ROLE_HEADER = os.getenv('WEBUI_AUTH_TRUSTED_ROLE_HEADER', None)
+# With trusted-header sign-in on, a request that does not carry the email header
+# signs in by password instead of being refused. A proxy can then sign users in
+# by header on one address and by password on another, setting the header on one only.
+WEBUI_AUTH_TRUSTED_HEADER_OPTIONAL = os.getenv('WEBUI_AUTH_TRUSTED_HEADER_OPTIONAL', 'False').lower() == 'true'
 
 # Custom header name for API key authentication.  Defaults to 'x-api-key'.
 # Useful when Open WebUI sits behind a reverse proxy / API gateway that

@@ -32,6 +32,7 @@ from open_webui.env import (
     STATIC_DIR,
     TRUSTED_SIGNATURE_KEY,
     WEBUI_AUTH_TRUSTED_EMAIL_HEADER,
+    WEBUI_AUTH_TRUSTED_HEADER_OPTIONAL,
     WEBUI_SECRET_KEY,
     pk,
 )
@@ -323,6 +324,20 @@ async def revoke_user_tokens(request, user_id: str):
         str(int(datetime.now(UTC).timestamp())),
         ex=int(expires_delta.total_seconds()) if expires_delta else None,
     )
+
+
+def uses_trusted_header_auth(request: Request) -> bool:
+    """Whether *request* signs in by the trusted email header rather than by password.
+
+    Every request does while the header is configured, unless
+    WEBUI_AUTH_TRUSTED_HEADER_OPTIONAL is set: then only a request carrying
+    the header does.
+    """
+    if not WEBUI_AUTH_TRUSTED_EMAIL_HEADER:
+        return False
+    if WEBUI_AUTH_TRUSTED_HEADER_OPTIONAL:
+        return WEBUI_AUTH_TRUSTED_EMAIL_HEADER in request.headers
+    return True
 
 
 def extract_token_from_auth_header(auth_header: str):

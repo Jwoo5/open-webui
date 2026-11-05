@@ -116,7 +116,6 @@ from open_webui.env import (
     WEBUI_ADMIN_EMAIL,
     WEBUI_ADMIN_NAME,
     WEBUI_ADMIN_PASSWORD,
-    WEBUI_AUTH_TRUSTED_EMAIL_HEADER,
     WEBUI_BUILD_HASH,
     WEBUI_SECRET_KEY,
     WEBUI_SESSION_COOKIE_SAME_SITE,
@@ -215,6 +214,7 @@ from open_webui.utils.auth import (
     get_http_authorization_cred,
     get_license_data,
     get_verified_user,
+    uses_trusted_header_auth,
 )
 from open_webui.utils.chat import (
     chat_completed as chat_completed_handler,
@@ -2296,7 +2296,7 @@ async def get_app_config(request: Request):
         'features': {
             # --- Public: required by login/signup page pre-auth ---
             'auth': WEBUI_AUTH,
-            'auth_trusted_header': bool(WEBUI_AUTH_TRUSTED_EMAIL_HEADER),
+            'auth_trusted_header': uses_trusted_header_auth(request),
             'enable_signup_password_confirmation': ENABLE_SIGNUP_PASSWORD_CONFIRMATION,
             'enable_ldap': config.get('ldap.enable'),
             'enable_signup': config.get('ui.enable_signup'),

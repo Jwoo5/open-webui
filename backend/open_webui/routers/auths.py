@@ -25,6 +25,7 @@ from open_webui.env import (
     AIOHTTP_CLIENT_SESSION_SSL,
     ENABLE_INITIAL_ADMIN_SIGNUP,
     ENABLE_OAUTH_TOKEN_EXCHANGE,
+    GUEST_ACCOUNT_EMAIL_DOMAIN,
     OAUTH_TOKEN_EXCHANGE_RATE_LIMIT,
     OAUTH_TOKEN_EXCHANGE_RATE_LIMIT_WINDOW,
     OAUTH_TOKEN_EXCHANGE_TRUSTED_CLIENT_IDS,
@@ -72,6 +73,7 @@ from open_webui.utils.auth import (
     invalidate_token,
     may_create_first_account,
     revoke_user_tokens,
+    trusted_header_email,
     uses_trusted_header_auth,
     validate_password,
     verify_password,
@@ -735,7 +737,9 @@ async def signin(
         if WEBUI_AUTH_TRUSTED_EMAIL_HEADER not in request.headers:
             raise HTTPException(status.HTTP_400_BAD_REQUEST, detail=ERROR_MESSAGES.INVALID_TRUSTED_HEADER)
 
-        email = request.headers[WEBUI_AUTH_TRUSTED_EMAIL_HEADER].lower()
+        email = trusted_header_email(request)
+        if not email:
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, detail=ERROR_MESSAGES.INVALID_TRUSTED_HEADER)
         name = email
 
         if WEBUI_AUTH_TRUSTED_NAME_HEADER:
@@ -772,7 +776,9 @@ async def signin(
 
             if WEBUI_AUTH_TRUSTED_ROLE_HEADER:
                 trusted_role = request.headers.get(WEBUI_AUTH_TRUSTED_ROLE_HEADER, '').lower().strip()
-                if trusted_role in {'admin', 'user', 'pending'}:
+                # A guest account is never made an admin by the header.
+                trusted_roles = {'user', 'pending'} if GUEST_ACCOUNT_EMAIL_DOMAIN else {'admin', 'user', 'pending'}
+                if trusted_role in trusted_roles:
                     if user.role != trusted_role:
                         updated_user = await Users.update_user_role_by_id(user.id, trusted_role, db=db)
                         if updated_user:

@@ -794,9 +794,14 @@ WEBUI_AUTH_TRUSTED_ROLE_HEADER = os.getenv('WEBUI_AUTH_TRUSTED_ROLE_HEADER', Non
 # The first account, which is made an admin, is then created by password only.
 WEBUI_AUTH_TRUSTED_HEADER_OPTIONAL = os.getenv('WEBUI_AUTH_TRUSTED_HEADER_OPTIONAL', 'False').lower() == 'true'
 
-# Guest accounts: users other than admins whose email is at GUEST_ACCOUNT_EMAIL_DOMAIN
-# are removed, with their chats and files, once idle for GUEST_ACCOUNT_RETENTION_HOURS.
-# Every account is kept unless both are set.
+# Guest accounts. With GUEST_ACCOUNT_EMAIL_DOMAIN set, the trusted email header signs
+# in only addresses at that domain, the trusted role header cannot grant 'admin', and
+# an account's email holds a hash of the header's local part instead of the local part
+# itself (see open_webui.utils.auth.trusted_header_email). Without
+# WEBUI_AUTH_TRUSTED_HEADER_OPTIONAL the first header sign-in on an empty database is
+# still made the admin. Users other than admins whose email is at the domain are
+# removed, with their chats and files, once idle for GUEST_ACCOUNT_RETENTION_HOURS;
+# every account is kept unless both are set.
 GUEST_ACCOUNT_EMAIL_DOMAIN = os.getenv('GUEST_ACCOUNT_EMAIL_DOMAIN', '').strip().lower()
 try:
     GUEST_ACCOUNT_RETENTION_HOURS = float(os.getenv('GUEST_ACCOUNT_RETENTION_HOURS', '') or 0)

@@ -23,6 +23,7 @@ from open_webui.constants import ERROR_MESSAGES
 from open_webui.env import (
     ENABLE_OTEL,
     ENABLE_PASSWORD_VALIDATION,
+    GUEST_ACCOUNT_EMAIL_DOMAIN,
     LICENSE_BLOB,
     OFFLINE_MODE,
     PASSWORD_HASH_ALGORITHM,
@@ -350,6 +351,28 @@ def may_create_first_account(request: Request) -> bool:
     return not (WEBUI_AUTH_TRUSTED_HEADER_OPTIONAL and uses_trusted_header_auth(request))
 
 
+def trusted_header_email(request: Request) -> str:
+    """Return the account email the trusted email header of *request* names, or '' without one.
+
+    Without GUEST_ACCOUNT_EMAIL_DOMAIN this is the header lowercased. With it,
+    the header may name only an address at that domain, and the email
+    returned is guest-<SHA-256 of the address's local part>@<domain>. A proxy
+    that builds the header from a sign-in secret, such as a cookie, then does
+    not have that secret shown wherever an account's email is. An address at
+    another domain raises a 403.
+    """
+    if not WEBUI_AUTH_TRUSTED_EMAIL_HEADER:
+        return ''
+    email = request.headers.get(WEBUI_AUTH_TRUSTED_EMAIL_HEADER, '').lower()
+    if not email or not GUEST_ACCOUNT_EMAIL_DOMAIN:
+        return email
+    local, _, domain = email.rpartition('@')
+    if not local or domain != GUEST_ACCOUNT_EMAIL_DOMAIN:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail=ERROR_MESSAGES.TRUSTED_HEADER_OUTSIDE_GUEST_DOMAIN)
+    digest = hashlib.sha256(local.encode('utf-8')).hexdigest()
+    return f'guest-{digest}@{GUEST_ACCOUNT_EMAIL_DOMAIN}'
+
+
 def extract_token_from_auth_header(auth_header: str):
     return auth_header[len('Bearer ') :]
 
@@ -438,7 +461,7 @@ async def get_current_user(
                 )
             else:
                 if WEBUI_AUTH_TRUSTED_EMAIL_HEADER:
-                    trusted_email = request.headers.get(WEBUI_AUTH_TRUSTED_EMAIL_HEADER, '').lower()
+                    trusted_email = trusted_header_email(request)
                     if trusted_email and user.email != trusted_email:
                         raise HTTPException(
                             status_code=status.HTTP_401_UNAUTHORIZED,
